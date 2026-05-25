@@ -48,7 +48,7 @@ export function AuthPage() {
       >
         <div className="text-center mb-10">
           <h1 className="text-4xl font-serif font-bold mb-2 flex justify-center items-center gap-2">
-            <span className="text-primary glow-accent">瞬知</span>
+            <span className="text-primary" style={{ textShadow: '0 0 20px rgba(196,155,76,0.4), 0 0 60px rgba(196,155,76,0.15), 0 0 100px rgba(196,155,76,0.08)' }}>瞬知</span>
           </h1>
           <p className="text-foreground/60 text-sm mt-4">AI 说明书智能问答平台</p>
         </div>

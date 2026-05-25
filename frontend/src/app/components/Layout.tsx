@@ -2,12 +2,18 @@ import { Outlet, Link, useNavigate, useLocation } from "react-router";
 import { BookOpen, MessageSquare, LogOut, Settings, Bell, LayoutTemplate, Menu, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { authApi } from "../../api/auth";
 
 export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
+  const [username, setUsername] = useState("");
+
+  useEffect(() => {
+    authApi.me().then((u) => setUsername(u.username)).catch(() => {});
+  }, []);
 
   // Lock root scroll position — prevents scroll chaining from ChatPage's scrollIntoView
   useEffect(() => {
@@ -160,9 +166,9 @@ export function Layout() {
             </button>
             <div className="flex items-center gap-3 pl-4 border-l border-border/50">
               <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-primary font-serif font-bold">
-                U
+                {username ? username[0].toUpperCase() : "U"}
               </div>
-              <span className="text-sm font-medium hidden sm:block">User</span>
+              <span className="text-sm font-medium hidden sm:block">{username || "User"}</span>
             </div>
           </div>
         </header>

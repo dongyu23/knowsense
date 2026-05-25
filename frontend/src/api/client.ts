@@ -1,6 +1,6 @@
 import { toast } from 'sonner'
 
-const BASE = '/api/v1'
+const BASE = import.meta.env.VITE_API_URL || '/api/v1'
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const token = localStorage.getItem('token')

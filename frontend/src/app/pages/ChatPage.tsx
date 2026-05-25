@@ -100,7 +100,22 @@ export function ChatPage() {
     }
     setIsTyping(false);
     loadConvs();
-    if (convId) loadMessages(convId);
+    // Only refresh citations for the last message, avoid full list replacement
+    if (convId) {
+      try {
+        const data = await chatApi.messages(convId, 2);
+        const latest = (data.list || []).reverse().find((m: any) => m.role === "assistant");
+        if (latest?.citations?.length) {
+          setMessages((prev) => {
+            const copy = [...prev];
+            const last = { ...copy[copy.length - 1] };
+            last.citations = latest.citations;
+            copy[copy.length - 1] = last;
+            return copy;
+          });
+        }
+      } catch { /* */ }
+    }
   };
 
   const handleDeleteConv = async (convId: string) => {

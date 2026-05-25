@@ -9,7 +9,13 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
 
-  const resp = await fetch(`${BASE}${url}`, { ...options, headers })
+  let resp: Response
+  try {
+    resp = await fetch(`${BASE}${url}`, { ...options, headers })
+  } catch {
+    toast.error("网络连接失败，请检查网络后重试")
+    throw new Error("network error")
+  }
 
   if (resp.status === 401) {
     localStorage.removeItem('token')
@@ -17,7 +23,13 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     throw new Error('unauthorized')
   }
 
-  const body = await resp.json()
+  let body: any
+  try {
+    body = await resp.json()
+  } catch {
+    toast.error(`服务器异常 (${resp.status})，请稍后重试`)
+    throw new Error("invalid json")
+  }
   if (body.code !== 200) {
     if (body.code === 1401) {
       localStorage.removeItem('token')

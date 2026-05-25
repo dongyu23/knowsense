@@ -19,9 +19,10 @@ export function AuthPage() {
     try {
       if (!isLogin) {
         await authApi.register(form);
-        toast.success("注册成功，请登录");
-        setIsLogin(true);
-        setForm({ username: "", email: "", password: "" });
+        const data = await authApi.login({ username: form.username, password: form.password });
+        localStorage.setItem("token", data.access_token);
+        toast.success("注册成功");
+        navigate("/");
       } else {
         const data = await authApi.login({ username: form.username, password: form.password });
         localStorage.setItem("token", data.access_token);

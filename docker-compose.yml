@@ -1,0 +1,35 @@
+services:
+  knowsense:
+    build: .
+    container_name: knowsense
+    ports:
+      - "18080:80"
+    volumes:
+      - data:/data
+    environment:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: knowsense
+      DB_USER: knowsense
+      DB_PASSWORD: knowsense_dev
+      REDIS_URL: redis://localhost:6379/0
+      MINIO_ENDPOINT: localhost:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin_dev
+      MINIO_BUCKET: knowsense-manuals
+      MINIO_SECURE: false
+      JWT_SECRET: change-me-in-production
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRE_MINUTES: 10080
+      LLM_API_URL: ${LLM_API_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      EMBEDDING_API_URL: ${EMBEDDING_API_URL:-}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-}
+      PADDLEOCR_API_URL: ${PADDLEOCR_API_URL:-}
+      PADDLEOCR_API_KEY: ${PADDLEOCR_API_KEY:-}
+    restart: unless-stopped
+
+volumes:
+  data:

@@ -1,3 +1,4 @@
+import { Navigate } from "react-router";
 import { createBrowserRouter } from "react-router";
 import { Layout } from "./components/Layout";
 import { AuthPage } from "./pages/AuthPage";
@@ -7,10 +8,26 @@ import { ChatPage } from "./pages/ChatPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { ShowcasePage } from "./pages/ShowcasePage";
 
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const token = localStorage.getItem("token");
+  if (!token) return <Navigate to="/auth" replace />;
+  return <>{children}</>;
+}
+
+function GuestGuard({ children }: { children: React.ReactNode }) {
+  const token = localStorage.getItem("token");
+  if (token) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
 export const router = createBrowserRouter([
   {
     path: "/",
-    Component: Layout,
+    element: (
+      <AuthGuard>
+        <Layout />
+      </AuthGuard>
+    ),
     children: [
       { index: true, Component: ManualsPage },
       { path: "manuals/:id", Component: ManualDetailPage },
@@ -26,6 +43,10 @@ export const router = createBrowserRouter([
   },
   {
     path: "/auth",
-    Component: AuthPage,
+    element: (
+      <GuestGuard>
+        <AuthPage />
+      </GuestGuard>
+    ),
   },
 ]);

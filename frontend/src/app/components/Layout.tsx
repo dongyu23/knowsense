@@ -21,6 +21,7 @@ export function Layout() {
   }, [location.pathname]);
 
   const handleLogout = () => {
+    localStorage.removeItem("token");
     navigate("/auth");
   };
 

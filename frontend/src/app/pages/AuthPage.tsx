@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { motion } from "motion/react";
-import { Lock, User, Mail, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Lock, User, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { authApi } from "../../api/auth";
 
 export function AuthPage() {
@@ -10,7 +10,7 @@ export function AuthPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [form, setForm] = useState({ username: "", email: "", password: "" });
+  const [form, setForm] = useState({ username: "", password: "" });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,7 +18,7 @@ export function AuthPage() {
     setLoading(true);
     try {
       if (!isLogin) {
-        await authApi.register(form);
+        await authApi.register({ username: form.username, email: `${form.username}@knowsense.local`, password: form.password });
         const data = await authApi.login({ username: form.username, password: form.password });
         localStorage.setItem("token", data.access_token);
         toast.success("注册成功");
@@ -30,7 +30,7 @@ export function AuthPage() {
         navigate("/");
       }
     } catch {
-      // error handled by api client
+      toast.error(isLogin ? "登录失败，请检查用户名和密码" : "注册失败，请重试");
     }
     setLoading(false);
   };
@@ -68,23 +68,6 @@ export function AuthPage() {
               />
             </div>
           </div>
-
-          {!isLogin && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground/80 pl-1">邮箱</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-foreground/40">
-                  <Mail className="h-5 w-5" />
-                </div>
-                <input
-                  type="email" required={!isLogin} value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-foreground placeholder-foreground/30 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all"
-                  placeholder="请输入邮箱"
-                />
-              </div>
-            </div>
-          )}
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground/80 pl-1">密码</label>

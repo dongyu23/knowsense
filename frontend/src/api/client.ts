@@ -19,7 +19,9 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
 
   if (resp.status === 401) {
     localStorage.removeItem('token')
-    window.location.href = '/auth'
+    if (window.location.pathname !== '/auth') {
+      window.location.href = '/auth'
+    }
     throw new Error('unauthorized')
   }
 
@@ -33,7 +35,9 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   if (body.code !== 200) {
     if (body.code === 1401) {
       localStorage.removeItem('token')
-      window.location.href = '/auth'
+      if (window.location.pathname !== '/auth') {
+        window.location.href = '/auth'
+      }
       throw new Error('unauthorized')
     }
     toast.error(body.message || '请求失败')

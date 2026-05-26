@@ -79,9 +79,7 @@ export function ChatPage() {
 
     setMessages((prev) => [...prev, { id: Date.now().toString(), role: "user", content }]);
 
-    const aiMsgId = (Date.now() + 1).toString();
-    setMessages((prev) => [...prev, { id: aiMsgId, role: "assistant", content: "", citations: [] }]);
-
+    let aiMsgId = "";
     const token = localStorage.getItem("token");
     const abort = new AbortController();
     abortRef.current = abort;
@@ -108,11 +106,12 @@ export function ChatPage() {
               if (text) {
                 setMessages((prev) => {
                   const copy = [...prev];
-                  for (let i = copy.length - 1; i >= 0; i--) {
-                    if (copy[i].role === "assistant") {
-                      copy[i] = { ...copy[i], content: copy[i].content + text };
-                      break;
-                    }
+                  let last = copy[copy.length - 1];
+                  if (last && last.role === "assistant") {
+                    copy[copy.length - 1] = { ...last, content: last.content + text };
+                  } else {
+                    aiMsgId = (Date.now() + 1).toString();
+                    copy.push({ id: aiMsgId, role: "assistant", content: text, citations: [] });
                   }
                   return copy;
                 });
@@ -129,11 +128,12 @@ export function ChatPage() {
           if (text) {
             setMessages((prev) => {
               const copy = [...prev];
-              for (let i = copy.length - 1; i >= 0; i--) {
-                if (copy[i].role === "assistant") {
-                  copy[i] = { ...copy[i], content: copy[i].content + text };
-                  break;
-                }
+              let last = copy[copy.length - 1];
+              if (last && last.role === "assistant") {
+                copy[copy.length - 1] = { ...last, content: last.content + text };
+              } else {
+                aiMsgId = (Date.now() + 1).toString();
+                copy.push({ id: aiMsgId, role: "assistant", content: text, citations: [] });
               }
               return copy;
             });
@@ -146,10 +146,11 @@ export function ChatPage() {
         const copy = [...prev];
         for (let i = copy.length - 1; i >= 0; i--) {
           if (copy[i].role === "assistant") {
-            copy[i] = { ...copy[i], content: "[网络错误，请重试]" };
-            break;
+            copy[i] = { ...copy[i], content: copy[i].content || "[网络错误，请重试]" };
+            return copy;
           }
         }
+        copy.push({ id: (Date.now() + 1).toString(), role: "assistant", content: "[网络错误，请重试]", citations: [] });
         return copy;
       });
     }
@@ -248,7 +249,8 @@ export function ChatPage() {
               <AnimatePresence initial={false}>
                 {messages.map((msg) => (
                   <motion.div key={msg.id}
-                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                    initial={msg.role === "assistant" ? { opacity: 0, y: 20 } : false}
+                    animate={{ opacity: 1, y: 0 }}
                     className={`flex gap-4 max-w-4xl mx-auto ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 mt-1 ${msg.role === "assistant" ? "bg-primary/20 text-primary border border-primary/30 glow-accent" : "bg-white/10 text-foreground border border-white/20"}`}>
                       {msg.role === "assistant" ? <Bot className="w-6 h-6" /> : <User className="w-6 h-6" />}

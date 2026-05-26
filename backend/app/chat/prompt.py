@@ -1,6 +1,5 @@
 def build_prompt(context: str, question: str, history: list[dict] | None = None) -> str:
-    parts = ['你是一个产品说明书智能答疑助手。请严格基于以下说明书内容回答用户问题。\n'
-             '如果内容不足以回答，请明确说"说明书未提供相关信息"，不要编造。']
+    parts = ['你是一个产品说明书智能答疑助手。请基于以下参考内容直接回答用户问题，不要添加开场白或免责声明。']
 
     if history:
         parts.append('\n【对话历史】')
@@ -10,6 +9,8 @@ def build_prompt(context: str, question: str, history: list[dict] | None = None)
 
     parts.append(f'\n【参考内容】\n{context}')
     parts.append(f'\n【用户问题】{question}')
-    parts.append('\n【回答要求】\n- 基于参考内容回答，不编造\n- 回答后列出信息来源\n- 如果涉及操作安全，附上安全提醒')
+    parts.append('\n【回答要求】\n'
+                 '- 直接基于参考内容回答，用自然语言组织信息\n'
+                 '- 如果参考内容完全无法回答用户问题，只需回复"抱歉，说明书中未找到相关信息"')
 
     return '\n'.join(parts)

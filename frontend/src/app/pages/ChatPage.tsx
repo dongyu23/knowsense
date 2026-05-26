@@ -16,6 +16,8 @@ export function ChatPage() {
   const [isTyping, setIsTyping] = useState(false);
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const skipLoadRef = useRef(false);
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
 
@@ -31,9 +33,25 @@ export function ChatPage() {
   useEffect(() => { loadConvs(); }, [loadConvs]);
 
   useEffect(() => {
-    if (id) { setLoading(true); loadMessages(id); }
-    else { setMessages([]); setLoading(false); }
+    if (id) {
+      if (skipLoadRef.current) {
+        skipLoadRef.current = false;
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      loadMessages(id);
+    } else {
+      setMessages([]);
+      setLoading(false);
+    }
   }, [id, loadMessages]);
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => { scrollToBottom(); }, [messages, isTyping]);
 
@@ -41,35 +59,44 @@ export function ChatPage() {
     e.preventDefault();
     if (!input.trim() || isTyping) return;
     const content = input.trim();
-    setInput("");
     setIsTyping(true);
-
-    setMessages((prev) => [...prev, { id: Date.now().toString(), role: "user", content }]);
 
     let convId = id;
     if (!convId) {
       try {
         const newConv = await chatApi.create(content.slice(0, 20));
         convId = newConv.id;
-        navigate(`/chat/${convId}`, { replace: true });
+        skipLoadRef.current = true;
+        navigate(`/chat/${convId}`);
         loadConvs();
-      } catch { toast.error("创建对话失败"); setIsTyping(false); return; }
+      } catch {
+        setIsTyping(false);
+        toast.error("创建对话失败");
+        return;
+      }
     }
+    setInput("");
+
+    setMessages((prev) => [...prev, { id: Date.now().toString(), role: "user", content }]);
 
     const aiMsgId = (Date.now() + 1).toString();
     setMessages((prev) => [...prev, { id: aiMsgId, role: "assistant", content: "", citations: [] }]);
 
     const token = localStorage.getItem("token");
+    const abort = new AbortController();
+    abortRef.current = abort;
+
     try {
       const resp = await fetch(`/api/v1/conversations/${convId}/messages?message=${encodeURIComponent(content)}`, {
         method: "POST", headers: { Authorization: `Bearer ${token}` },
+        signal: abort.signal,
       });
       const reader = resp.body!.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) { buffer += decoder.decode(); break; }
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";
@@ -81,9 +108,12 @@ export function ChatPage() {
               if (text) {
                 setMessages((prev) => {
                   const copy = [...prev];
-                  const last = { ...copy[copy.length - 1] };
-                  last.content += text;
-                  copy[copy.length - 1] = last;
+                  for (let i = copy.length - 1; i >= 0; i--) {
+                    if (copy[i].role === "assistant") {
+                      copy[i] = { ...copy[i], content: copy[i].content + text };
+                      break;
+                    }
+                  }
                   return copy;
                 });
               }
@@ -91,16 +121,40 @@ export function ChatPage() {
           }
         }
       }
-    } catch {
+      // Flush remaining buffer after stream end
+      if (buffer && buffer.startsWith("data: ")) {
+        try {
+          const chunk = JSON.parse(buffer.slice(6));
+          const text = typeof chunk === "string" ? chunk : chunk.content || chunk.data || "";
+          if (text) {
+            setMessages((prev) => {
+              const copy = [...prev];
+              for (let i = copy.length - 1; i >= 0; i--) {
+                if (copy[i].role === "assistant") {
+                  copy[i] = { ...copy[i], content: copy[i].content + text };
+                  break;
+                }
+              }
+              return copy;
+            });
+          }
+        } catch { /* */ }
+      }
+    } catch (err: any) {
+      if (err.name === "AbortError") return;
       setMessages((prev) => {
         const copy = [...prev];
-        copy[copy.length - 1] = { ...copy[copy.length - 1], content: "[网络错误，请重试]" };
+        for (let i = copy.length - 1; i >= 0; i--) {
+          if (copy[i].role === "assistant") {
+            copy[i] = { ...copy[i], content: "[网络错误，请重试]" };
+            break;
+          }
+        }
         return copy;
       });
     }
-    setIsTyping(false);
-    loadConvs();
-    // Only refresh citations for the last message, avoid full list replacement
+
+    // Fetch citations
     if (convId) {
       try {
         const data = await chatApi.messages(convId, 2);
@@ -108,14 +162,20 @@ export function ChatPage() {
         if (latest?.citations?.length) {
           setMessages((prev) => {
             const copy = [...prev];
-            const last = { ...copy[copy.length - 1] };
-            last.citations = latest.citations;
-            copy[copy.length - 1] = last;
+            for (let i = copy.length - 1; i >= 0; i--) {
+              if (copy[i].role === "assistant") {
+                copy[i] = { ...copy[i], citations: latest.citations };
+                break;
+              }
+            }
             return copy;
           });
         }
       } catch { /* */ }
     }
+
+    setIsTyping(false);
+    loadConvs();
   };
 
   const handleDeleteConv = async (convId: string) => {

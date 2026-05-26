@@ -29,6 +29,8 @@ async def _call_embed_api(client: httpx.AsyncClient, text: str) -> list[float]:
 
 
 async def embed_texts(texts: list[str]) -> list[list[float]]:
+    if not settings.embedding_api_url:
+        raise RuntimeError("Embedding API 未配置，请设置 EMBEDDING_API_URL 和 EMBEDDING_API_KEY 环境变量")
     embeddings = []
     async with httpx.AsyncClient(timeout=httpx.Timeout(10.0, read=10.0)) as client:
         for text in texts:

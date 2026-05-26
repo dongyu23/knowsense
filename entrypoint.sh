@@ -27,14 +27,14 @@ su - postgres -c "psql -tc \"SELECT 1 FROM pg_database WHERE datname='knowsense'
 
 # ---- Redis ----
 echo ">>> Starting Redis..."
-redis-server --daemonize yes --bind 127.0.0.1 --port 6379
+redis-server --daemonize yes --bind 127.0.0.1 --port 6379 --dir "$DATA_DIR/redis" --save 900 1 --save 300 10 --save 60 10000
 
 # ---- MinIO ----
 echo ">>> Starting MinIO..."
 MINIO_ROOT_USER=minioadmin MINIO_ROOT_PASSWORD=minioadmin_dev \
     minio server "$DATA_DIR/minio" --console-address ":9001" --quiet &
 # Wait for MinIO
-until curl -sf http://localhost:9000/minio/health/live > /dev/null 2>&1; do sleep 0.5; done
+for i in $(seq 1 60); do curl -sf http://localhost:9000/minio/health/live > /dev/null 2>&1 && break; sleep 0.5; done
 
 # ---- Supervisor: Nginx + FastAPI + Worker ----
 echo ">>> Starting app services..."

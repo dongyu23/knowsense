@@ -17,18 +17,22 @@ from app.common.schemas import ApiResponse
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 
+def _client_ip(request: Request) -> str:
+    return request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or \
+           request.headers.get("X-Real-IP", "") or \
+           (request.client.host if request.client else "unknown")
+
+
 @router.post("/register")
 async def register(req: RegisterRequest, request: Request, db: AsyncSession = Depends(get_db)):
-    client_ip = request.client.host if request.client else "unknown"
-    await check_rate_limit(f"rate:{client_ip}:register", limit=5, window_seconds=300)
+    await check_rate_limit(f"rate:{_client_ip(request)}:register", limit=5, window_seconds=300)
     user = await register_user(db, req.username, req.email, req.password)
     return ApiResponse.ok(data=UserInfo.model_validate(user, from_attributes=True).model_dump())
 
 
 @router.post("/login")
 async def login(req: LoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
-    client_ip = request.client.host if request.client else "unknown"
-    await check_rate_limit(f"rate:{client_ip}:login", limit=10, window_seconds=300)
+    await check_rate_limit(f"rate:{_client_ip(request)}:login", limit=10, window_seconds=300)
     user = await authenticate_user(db, req.username, req.password)
     token_data = await issue_token(db, user)
     return ApiResponse.ok(data=token_data)

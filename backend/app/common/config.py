@@ -2,9 +2,9 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # PostgreSQL
+    # PostgreSQL（容器内默认 5432，本地开发通过 .env 覆盖为 15432）
     db_host: str = "localhost"
-    db_port: int = 15432
+    db_port: int = 5432
     db_name: str = "knowsense"
     db_user: str = "knowsense"
     db_password: str = "knowsense_dev"
@@ -13,11 +13,11 @@ class Settings(BaseSettings):
     def database_url(self) -> str:
         return f"postgresql+asyncpg://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
 
-    # Redis
-    redis_url: str = "redis://localhost:16379/0"
+    # Redis（容器内默认 6379，本地开发通过 .env 覆盖为 16379）
+    redis_url: str = "redis://localhost:6379/0"
 
-    # MinIO
-    minio_endpoint: str = "localhost:19000"
+    # MinIO（容器内默认 9000，本地开发通过 .env 覆盖为 19000）
+    minio_endpoint: str = "localhost:9000"
     minio_access_key: str = "minioadmin"
     minio_secret_key: str = "minioadmin_dev"
     minio_bucket: str = "knowsense-manuals"

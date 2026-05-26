@@ -16,6 +16,8 @@ MODEL = "PaddleOCR-VL-1.5"
 
 async def ocr_image(image_url: str) -> str:
     """调用 PaddleOCR API，上传文件，轮询结果，返回 Markdown 文本"""
+    if not JOB_URL:
+        raise RuntimeError("PaddleOCR API 未配置，请设置 PADDLEOCR_API_URL 和 PADDLEOCR_API_KEY 环境变量")
     headers = {"Authorization": f"bearer {TOKEN}"}
 
     # 1. 从 MinIO 下载图片

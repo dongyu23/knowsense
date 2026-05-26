@@ -37,7 +37,6 @@ logger = logging.getLogger("knowsense")
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database ready — extensions enabled, tables created")
     yield
@@ -52,7 +51,7 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:15173", "http://localhost:18080", "http://localhost"],
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
